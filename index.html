@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Shop</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="logo">PRIMA Girls Shop</div>
+        <div class="cart-icon" onclick="toggleCart()">
+            <i class="fa-solid fa-shopping-cart"></i>
+            <span id="cart-count">0</span>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <h2>Our Products</h2>
+            <div id="product-container" class="product-grid">
+                <div class="loading">Loading products from Spreadsheet...</div>
+            </div>
+        </div>
+    </main>
+
+    <div id="cart-modal" class="cart-modal">
+        <div class="cart-content">
+            <span class="close-btn" onclick="toggleCart()">&times;</span>
+            <h2>Your Cart</h2>
+            <div id="cart-items">
+                <p>Your cart is empty.</p>
+            </div>
+            <div class="cart-footer">
+                <h3>Total: <span id="cart-total">0</span> RWF</h3>
+                <button onclick="checkoutViaWhatsApp()" class="checkout-btn">
+                    <i class="fa-brands fa-whatsapp"></i> Order via WhatsApp
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <a href="#" onclick="openChat()" class="float-chat">
+        <i class="fa-brands fa-whatsapp my-float"></i>
+    </a>
+
+    <script src="script.js"></script>
+</body>
+</html>
