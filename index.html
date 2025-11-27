@@ -3,14 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Shop</title>
+    <title>PRIMA Girls Shop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    
+    <div id="background-fader">
+        </div>
 
     <header>
-        <div class="logo">PRIMA Girls Shop</div>
+        <div class="header-spacer-left"></div> 
+        
+        <div class="header-center-logo">
+            <img src="https://i.postimg.cc/g0K6WDxZ/prima-girls-shop-logo-2.png" alt="PRIMA Girls Shop Logo" class="logo-img-center">
+        </div>
+
         <div class="cart-icon" onclick="toggleCart()">
             <i class="fa-solid fa-shopping-cart"></i>
             <span id="cart-count">0</span>
@@ -19,13 +27,33 @@
 
     <main>
         <div class="container">
-            <h2>Our Products</h2>
-            <div id="product-container" class="product-grid">
+            <div class="main-heading-wrapper">
+                <h2>Welcome to Prima Girls Shop!</h2>
+                <img src="https://i.postimg.cc/g0K6WDxZ/prima-girls-shop-logo-2.png" alt="PRIMA Logo" class="heading-logo">
+            </div>
+            
+            <div id="hero-slider" class="product-slider">
+                <div id="slider-track" class="slider-track">
+                    </div>
+            </div>
+            
+            <div class="filter-bar">
+                <input type="text" id="search-input" placeholder="Search products..." onkeyup="filterAndSearch()">
+            </div>
+            
+            <div id="product-container">
                 <div class="loading">Loading products from Spreadsheet...</div>
             </div>
         </div>
     </main>
 
+    <div id="preview-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closePreviewModal()">&times;</span>
+            <div id="preview-details">
+            </div>
+        </div>
+    </div>
     <div id="cart-modal" class="cart-modal">
         <div class="cart-content">
             <span class="close-btn" onclick="toggleCart()">&times;</span>
