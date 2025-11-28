@@ -9,14 +9,13 @@
 </head>
 <body>
     
-    <div id="background-fader">
-        </div>
+    <div id="background-fader"></div>
 
     <header>
-        <div class="header-spacer-left"></div> 
+        <div class="header-spacer"></div> 
         
-        <div class="header-center-logo">
-            <img src="https://i.postimg.cc/g0K6WDxZ/prima-girls-shop-logo-2.png" alt="PRIMA Girls Shop Logo" class="logo-img-center">
+        <div class="header-logo-container">
+            <img src="https://i.postimg.cc/g0K6WDxZ/prima-girls-shop-logo-2.png" alt="PRIMA Logo" class="header-logo-img">
         </div>
 
         <div class="cart-icon" onclick="toggleCart()">
@@ -27,40 +26,41 @@
 
     <main>
         <div class="container">
-            <div class="main-heading-wrapper">
-                <h2>Welcome to Prima Girls Shop!</h2>
-                <img src="https://i.postimg.cc/g0K6WDxZ/prima-girls-shop-logo-2.png" alt="PRIMA Logo" class="heading-logo">
+            
+            <div class="welcome-banner">
+                <h2 class="welcome-text">Welcome to Prima Girls Shop!</h2>
+                <img src="https://i.postimg.cc/g0K6WDxZ/prima-girls-shop-logo-2.png" alt="PRIMA Logo" class="welcome-logo">
             </div>
             
             <div id="hero-slider" class="product-slider">
-                <div id="slider-track" class="slider-track">
-                    </div>
-            </div>
+                </div>
             
             <div class="filter-bar">
                 <input type="text" id="search-input" placeholder="Search products..." onkeyup="filterAndSearch()">
             </div>
             
             <div id="product-container">
-                <div class="loading">Loading products from Spreadsheet...</div>
+                <div class="loading">Loading products...</div>
             </div>
         </div>
     </main>
 
     <div id="preview-modal" class="modal">
         <div class="modal-content">
-            <span class="close-btn" onclick="closePreviewModal()">&times;</span>
-            <div id="preview-details">
             </div>
-        </div>
     </div>
-    <div id="cart-modal" class="cart-modal">
-        <div class="cart-content">
-            <span class="close-btn" onclick="toggleCart()">&times;</span>
-            <h2>Your Cart</h2>
+
+    <div id="cart-modal" class="cart-sidebar-wrapper">
+        <div class="cart-sidebar">
+            <div class="cart-header">
+                <h2>Your Cart</h2>
+                <span class="close-cart" onclick="toggleCart()">&times;</span>
+            </div>
+            
             <div id="cart-items">
                 <p>Your cart is empty.</p>
             </div>
+            
             <div class="cart-footer">
                 <h3>Total: <span id="cart-total">0</span> RWF</h3>
                 <button onclick="checkoutViaWhatsApp()" class="checkout-btn">

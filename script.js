@@ -1,376 +1,238 @@
 // --- CONFIGURATION ---
-// I have inserted your specific Google Sheet Link here:
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCp9HDFZI7AodQIJN4zyTLWbLy2LK9ORzxT9QtJMe8ggTVOYeknYent5E9Gp_BzZpIzsaUB0RWxzr7/pub?output=csv'; 
-
-// I have inserted your phone number (formatted for WhatsApp without the '+'):
 const ADMIN_PHONE = '250786023627'; 
+const FALLBACK_LOGO = 'https://i.postimg.cc/g0K6WDxZ/prima-girls-shop-logo-2.png';
 // ---------------------
 
 let products = []; 
 let cart = [];
+let slideIndex = 0;
 
-// NEW LOGO URL 
-const FALLBACK_LOGO_URL = 'https://i.postimg.cc/g0K6WDxZ/prima-girls-shop-logo-2.png';
-
-// 1. Fetch Products from Google Sheet (unchanged)
+// 1. Initialize
 async function loadProducts() {
     const container = document.getElementById('product-container');
-    
     try {
         const response = await fetch(SHEET_URL);
         const data = await response.text();
-        
         products = parseCSV(data);
         
-        if (products.length === 0) {
-            container.innerHTML = '<div class="loading">No products found. Ensure spreadsheet has required columns.</div>';
+        if (products.length > 0) {
+            initSlider();
+            renderProducts(products);
         } else {
-            // Initialize the background and slider components
-            initBackgroundFader();
-            initHeroSlider();
-            
-            // Render the main product grid
-            renderProducts(products); 
+            container.innerHTML = 'No products found.';
         }
-
-    } catch (error) {
-        console.error("Error loading sheet:", error);
-        container.innerHTML = '<div class="loading">Error loading products. Check sheet link or CORS (use Live Server).</div>';
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = 'Error loading products.';
     }
 }
 
-// Helper: Simple CSV Parser (unchanged)
-function parseCSV(csvText) {
-    const rows = csvText.split('\n').map(row => row.split(','));
+function parseCSV(csv) {
+    const rows = csv.split('\n').map(row => row.split(','));
     const headers = rows[0].map(h => h.trim().toLowerCase());
-    
     const data = [];
-    
-    for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (row.length < headers.length) continue;
-        
-        const obj = {};
-        headers.forEach((header, index) => {
-            let value = row[index] ? row[index].replace(/"/g, '').trim() : '';
-            if (header === 'image') header = 'frontview';
-            
-            obj[header] = value;
-        });
-        
+    for(let i=1; i<rows.length; i++) {
+        let row = rows[i];
+        if(row.length < headers.length) continue;
+        let obj = {};
+        headers.forEach((h, idx) => obj[h] = row[idx] ? row[idx].replace(/"/g, '').trim() : '');
         if(obj.name) data.push(obj);
     }
     return data;
 }
 
-// 2. Filtering and Searching Logic (unchanged)
-function filterAndSearch() {
-    const searchInput = document.getElementById('search-input').value.toLowerCase();
-    
-    let filteredList = products.filter(product => {
-        const nameMatch = product.name.toLowerCase().includes(searchInput);
-        const categoryMatch = (product.category && product.category.toLowerCase().includes(searchInput));
-        const colorMatch = (product.color && product.color.toLowerCase().includes(searchInput));
-        const sizeMatch = (product.size && product.size.toLowerCase().includes(searchInput));
-
-        return nameMatch || categoryMatch || colorMatch || sizeMatch;
-    });
-
-    renderProducts(filteredList);
-}
-
-
-// 3. Render Products Grouped by Category (updated image fallback)
-function renderProducts(productList) {
+// 2. Render Products
+function renderProducts(list) {
     const container = document.getElementById('product-container');
-    container.innerHTML = ''; 
-
-    if (productList.length === 0) {
-        container.innerHTML = '<p class="loading">No products match your current search terms.</p>';
-        return;
-    }
-
-    const groupedProducts = productList.reduce((acc, product) => {
-        const category = product.category || 'Uncategorized';
-        if (!acc[category]) {
-            acc[category] = [];
-        }
-        acc[category].push(product);
+    container.innerHTML = '';
+    
+    const grouped = list.reduce((acc, p) => {
+        const cat = p.category || 'Uncategorized';
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(p);
         return acc;
     }, {});
 
-    for (const category in groupedProducts) {
-        const titleBar = document.createElement('h3');
-        titleBar.classList.add('category-title');
-        titleBar.textContent = category;
-        container.appendChild(titleBar);
+    for (const [category, items] of Object.entries(grouped)) {
+        const title = document.createElement('h3');
+        title.className = 'category-title';
+        title.textContent = category;
+        container.appendChild(title);
 
         const grid = document.createElement('div');
-        grid.classList.add('product-grid');
-        
-        groupedProducts[category].forEach((product) => {
-            const card = document.createElement('div');
-            card.classList.add('product-card');
-            
-            // Use FALLBACK_LOGO_URL if no specific image is found
-            const imgSource = product.frontview || product.image || FALLBACK_LOGO_URL;
-            const color = product.color || 'transparent';
-            const size = product.size ? `(${product.size})` : '';
+        grid.className = 'product-grid';
 
+        items.forEach((p) => {
+            const globalIndex = products.indexOf(p);
+            let img = p.frontview || p.image || FALLBACK_LOGO;
+            let card = document.createElement('div');
+            card.className = 'product-card';
             card.onclick = (e) => {
-                // Open preview modal if clicking anywhere but the "Add to Cart" button
-                if (!e.target.classList.contains('add-btn')) {
-                    openPreviewModal(product);
-                }
+                if(!e.target.classList.contains('add-btn')) openPreview(p);
             };
-
-            const productIndex = products.findIndex(p => p.name === product.name && p.price === product.price);
-
+            
             card.innerHTML = `
-                <img src="${imgSource}" alt="${product.name}" class="product-img">
+                <img src="${img}" class="product-img" alt="${p.name}">
                 <div class="product-info">
-                    <div class="product-name">
-                        <span>${product.name}</span>
-                        <div class="product-specs">
-                            <span class="color-swatch" style="background-color: ${color};" title="Color: ${color}"></span>
-                            <span class="product-size">${size}</span>
-                        </div>
-                    </div>
-                    <div class="product-price">${product.price} RWF</div>
-                    <button class="add-btn" onclick="addToCart(${productIndex})">Add to Cart</button>
+                    <div class="product-name">${p.name}</div>
+                    <div class="product-price">${p.price} RWF</div>
+                    <button class="add-btn" onclick="addToCart(${globalIndex})">Add to Cart</button>
                 </div>
             `;
             grid.appendChild(card);
         });
-        
+
         container.appendChild(grid);
     }
 }
 
-
-// 4. Initialize Background Fader (unchanged)
-function initBackgroundFader() {
-    const uniqueImages = [...new Set(products.map(p => p.frontview || p.image).filter(Boolean))];
+// 3. Fading Slider
+function initSlider() {
+    const slider = document.getElementById('hero-slider');
+    const slides = products.filter(p => p.frontview || p.image).slice(0, 5);
     
-    if (uniqueImages.length < 2) return; 
-
-    const faderContainer = document.getElementById('background-fader');
-    if (!faderContainer) return;
-
-    const imagesToDisplay = uniqueImages.slice(0, 5); 
-
-    imagesToDisplay.forEach((imgUrl, index) => {
-        const bgDiv = document.createElement('div');
-        bgDiv.classList.add('bg-image');
-        bgDiv.style.backgroundImage = `url('${imgUrl}')`;
-        bgDiv.style.animationDelay = `${index * 4}s`; 
-        faderContainer.appendChild(bgDiv);
-    });
-}
-
-// 5. Initialize Hero Slider (updated image fallback)
-function initHeroSlider() {
-    const track = document.getElementById('slider-track');
-    if (!track || products.length === 0) return;
-
-    const originalProducts = products;
+    if(slides.length === 0) return;
     
-    // Duplicate products for a seamless looping animation
-    const sliderProducts = [...originalProducts, ...originalProducts]; 
-    const itemWidth = 150; // Must match CSS .slider-item width
-    const itemMargin = 15; // Must match CSS .slider-item margin-right
-    const animationSpeed = 4.0; // seconds per item
-
-    track.innerHTML = ''; 
-
-    sliderProducts.forEach(product => {
-        const item = document.createElement('div');
-        item.classList.add('slider-item');
+    slider.style.display = 'block';
+    slider.innerHTML = '';
+    
+    slides.forEach((p, idx) => {
+        let div = document.createElement('div');
+        div.className = `slider-item ${idx === 0 ? 'active' : ''}`;
         
-        // Use FALLBACK_LOGO_URL if no specific image is found
-        const imgSource = product.frontview || product.image || FALLBACK_LOGO_URL;
-        
-        item.onclick = () => openPreviewModal(product);
+        div.onclick = () => openPreview(p);
 
-        item.innerHTML = `
-            <img src="${imgSource}" alt="${product.name}">
-            <div class="slider-text">${product.name}</div>
+        div.innerHTML = `
+            <img src="${p.frontview || p.image}" class="slider-img">
+            <div class="slider-caption">${p.name}</div>
         `;
-        track.appendChild(item);
+        slider.appendChild(div);
     });
     
-    // --- CRITICAL FIX: Calculate and enforce the track width ---
-    
-    // 1. Calculate the distance for ONE full loop (original product set)
-    const originalCount = originalProducts.length;
-    const slideDistance = originalCount * (itemWidth + itemMargin); 
-    
-    // 2. Calculate the total physical width of the track (including duplicates)
-    const totalTrackWidth = sliderProducts.length * (itemWidth + itemMargin);
-    
-    // 3. Set the physical width so the items don't wrap
-    track.style.width = `${totalTrackWidth}px`; 
-
-    // 4. Set CSS variable for the @keyframes animation to read the distance of ONE loop
-    document.documentElement.style.setProperty('--slide-width', `-${slideDistance}px`);
-    
-    // 5. Set animation duration (time taken to slide one full loop)
-    track.style.animationDuration = `${originalCount * animationSpeed}s`;
-    
-    // 6. Ensure animation is enabled
-    track.style.animationPlayState = 'running';
+    setInterval(() => {
+        let items = document.querySelectorAll('.slider-item');
+        if(items.length > 0) {
+            items[slideIndex].classList.remove('active');
+            slideIndex = (slideIndex + 1) % items.length;
+            items[slideIndex].classList.add('active');
+        }
+    }, 4000); 
 }
 
-
-// 6. Product Preview Modal Functions (updated image fallback)
-function openPreviewModal(product) {
+// 4. Preview Modal (Back Icon & Smaller Button)
+function openPreview(p) {
     const modal = document.getElementById('preview-modal');
-    const detailsDiv = document.getElementById('preview-details');
     
-    const frontView = product.frontview || product.image;
-    const color = product.color || 'N/A';
-    const size = product.size || 'N/A';
+    let images = [p.frontview, p.topview, p.bottomview, p.backview, p.image].filter(url => url && url.length > 5);
+    images = [...new Set(images)];
+    if(images.length === 0) images = [FALLBACK_LOGO];
 
-    const galleryHtml = `
-        <div class="preview-gallery">
-            ${createImageViewer(frontView, 'Front View')}
-            ${createImageViewer(product.topview, 'Top View')}
-            ${createImageViewer(product.bottomview, 'Bottom View')}
-            ${createImageViewer(product.backview, 'Back View')}
+    let imgsHTML = images.map(url => `<img src="${url}" class="preview-img">`).join('');
+    const globalIndex = products.indexOf(p);
+
+    document.querySelector('#preview-modal .modal-content').innerHTML = `
+        <span class="close-btn" onclick="closePreviewModal()">&times;</span>
+        
+        <h2 class="preview-header-text">
+            <i class="fa-solid fa-arrow-left back-icon" onclick="closePreviewModal()"></i>
+            Preview
+        </h2>
+        
+        <div id="preview-details">
+            <div class="preview-product-title">${p.name}</div>
+            <div class="preview-price">${p.price} RWF</div>
+            <div style="font-size:0.9rem; color:#666; margin-bottom:10px;">
+                Color: ${p.color || 'N/A'} | Size: ${p.size || 'N/A'}
+            </div>
+            
+            <div class="preview-gallery">${imgsHTML}</div>
+            
+            <div style="height: 10px;"></div>
         </div>
-    `;
-    
-    const productIndex = products.findIndex(p => p.name === product.name && p.price === product.price);
-
-    detailsDiv.innerHTML = `
-        <h3>${product.name}</h3>
-        <p class="preview-price">${product.price} RWF</p>
-        <p><strong>Color:</strong> <span class="color-swatch" style="background-color: ${color};"></span> ${color}</p>
-        <p style="margin-bottom: 20px;"><strong>Size:</strong> ${size}</p>
         
-        ${galleryHtml}
-        
-        <button class="preview-add-btn" onclick="addAndClosePreview(${productIndex})">
+        <button class="preview-add-btn" onclick="addToCart(${globalIndex}); closePreviewModal()">
             Add to Cart
         </button>
     `;
-
+    
     modal.style.display = 'flex';
 }
-
-function createImageViewer(link, title) {
-    // Use FALLBACK_LOGO_URL if no specific image is found
-    const finalLink = link || FALLBACK_LOGO_URL;
-    const finalTitle = link ? title : 'Image Not Found (Placeholder)';
-
-    // Only return the HTML if a link exists (either real or fallback)
-    if (!finalLink) return ''; 
-    return `
-        <div class="preview-image-container">
-            <img src="${finalLink}" alt="${finalTitle}">
-            <p style="margin-top: 5px; font-size: 0.85rem; color: var(--light-text);">${finalTitle}</p>
-        </div>
-    `;
-}
-
 
 function closePreviewModal() {
     document.getElementById('preview-modal').style.display = 'none';
 }
 
-function addAndClosePreview(index) {
-    addToCart(index);
-    closePreviewModal();
+// 5. Cart Logic (Sidebar)
+function toggleCart() {
+    const modal = document.getElementById('cart-modal');
+    modal.classList.toggle('open');
 }
 
-
-// 7. Cart Logic (unchanged)
-function addToCart(index) {
-    cart.push(products[index]);
+function addToCart(idx) {
+    cart.push(products[idx]);
     updateCartUI();
     toggleCart(); 
 }
 
-function removeFromCart(index) {
-    cart.splice(index, 1);
+function removeFromCart(idx) {
+    cart.splice(idx, 1);
     updateCartUI();
 }
 
 function updateCartUI() {
-    const cartItemsDiv = document.getElementById('cart-items');
-    const cartCount = document.getElementById('cart-count');
-    const cartTotal = document.getElementById('cart-total');
+    const container = document.getElementById('cart-items');
+    const count = document.getElementById('cart-count');
+    const totalEl = document.getElementById('cart-total');
     
-    cartItemsDiv.innerHTML = '';
+    container.innerHTML = '';
     let total = 0;
-
-    cart.forEach((item, index) => {
-        const priceNumber = parseInt(item.price.replace(/[^0-9]/g, '')) || 0;
-        total += priceNumber;
+    
+    cart.forEach((p, idx) => {
+        let price = parseInt(p.price.replace(/[^0-9]/g, '')) || 0;
+        total += price;
         
-        const color = item.color || 'N/A';
-        const size = item.size || 'N/A';
-
-        const div = document.createElement('div');
-        div.classList.add('cart-item');
-        
+        let div = document.createElement('div');
+        div.className = 'cart-item';
         div.innerHTML = `
-            <span>${item.name}</span>
-            <div class="cart-specs">
-                <span class="color-swatch" style="background-color: ${color};" title="Color: ${color}"></span> 
-                ${size}
+            <div class="cart-details">
+                <div class="cart-name-text">${p.name}</div>
+                <div class="cart-specs-text">${p.size || ''} ${p.color || ''}</div>
             </div>
-            <div class="cart-price-remove">
-                <span>${item.price}</span>
-                <i class="fa-solid fa-trash remove-item" onclick="removeFromCart(${index})"></i>
+            <div>
+                <span class="cart-item-price">${p.price}</span>
+                <i class="fa-solid fa-trash remove-item" onclick="removeFromCart(${idx})"></i>
             </div>
         `;
-        cartItemsDiv.appendChild(div);
+        container.appendChild(div);
     });
-
-    if (cart.length === 0) cartItemsDiv.innerHTML = '<p>Your cart is empty.</p>';
     
-    cartCount.innerText = cart.length;
-    cartTotal.innerText = total;
+    count.innerText = cart.length;
+    totalEl.innerText = total;
+    if(cart.length === 0) container.innerHTML = '<p>Your cart is empty.</p>';
 }
 
-function toggleCart() {
-    const modal = document.getElementById('cart-modal');
-    modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+// 6. Search
+function filterAndSearch() {
+    const term = document.getElementById('search-input').value.toLowerCase();
+    const filtered = products.filter(p => p.name.toLowerCase().includes(term));
+    renderProducts(filtered);
 }
 
-// 8. WhatsApp Integration (unchanged)
+// 7. Checkout
 function checkoutViaWhatsApp() {
-    if (cart.length === 0) {
-        alert("Cart is empty!");
-        return;
-    }
-
-    let message = "Muraho, Nashakaga gutumiza ibi:\n\n";
-    let total = 0;
-
-    cart.forEach(item => {
-        const priceNumber = parseInt(item.price.replace(/[^0-9]/g, '')) || 0;
-        const color = item.color || 'N/A';
-        const size = item.size ? ` (Size: ${item.size})` : '';
-        
-        message += `- ${item.name} ${size} [Color: ${color}]: ${item.price} RWF\n`;
-        total += priceNumber;
-    });
-
-    message += `\n*Igiciro Cyose: ${total} RWF*`;
-    message += `\n\nMwambwira niba biboneka.`;
-
-    const url = `https://wa.me/${ADMIN_PHONE}?text=${encodeURIComponent(message)}`;
+    if(cart.length === 0) return alert("Cart is empty");
     
-    window.open(url, '_blank');
+    let msg = "Hello, I want to order:\n\n";
+    let total = 0;
+    cart.forEach(p => {
+        let price = parseInt(p.price.replace(/[^0-9]/g, '')) || 0;
+        total += price;
+        msg += `- ${p.name} (${p.size||''} ${p.color||''}): ${p.price}\n`;
+    });
+    msg += `\nTotal: ${total} RWF`;
+    
+    window.open(`https://wa.me/${ADMIN_PHONE}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
-function openChat() {
-    const message = "Hello, I have a question about your products.";
-    const url = `https://wa.me/${ADMIN_PHONE}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
-}
-
-// Start app
 loadProducts();
