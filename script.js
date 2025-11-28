@@ -2,6 +2,10 @@
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCp9HDFZI7AodQIJN4zyTLWbLy2LK9ORzxT9QtJMe8ggTVOYeknYent5E9Gp_BzZpIzsaUB0RWxzr7/pub?output=csv'; 
 const ADMIN_PHONE = '250786023627'; 
 const FALLBACK_LOGO = 'https://i.postimg.cc/g0K6WDxZ/prima-girls-shop-logo-2.png';
+
+// Time in milliseconds to wait before cycling images on hover
+// Change this to 15000 if you want 15 seconds. Currently set to 2000 (2s) for better UX.
+const HOVER_DELAY = 2000; 
 // ---------------------
 
 let products = []; 
@@ -66,20 +70,29 @@ function renderProducts(list) {
         items.forEach((p) => {
             const globalIndex = products.indexOf(p);
             let img = p.frontview || p.image || FALLBACK_LOGO;
+            
             let card = document.createElement('div');
             card.className = 'product-card';
-            card.onclick = (e) => {
-                if(!e.target.classList.contains('add-btn')) openPreview(p);
-            };
             
+            // Generate HTML
             card.innerHTML = `
-                <img src="${img}" class="product-img" alt="${p.name}">
+                <img src="${img}" class="product-img" id="img-${globalIndex}" alt="${p.name}">
                 <div class="product-info">
                     <div class="product-name">${p.name}</div>
                     <div class="product-price">${p.price} RWF</div>
                     <button class="add-btn" onclick="addToCart(${globalIndex})">Add to Cart</button>
                 </div>
             `;
+            
+            // Click Event
+            card.onclick = (e) => {
+                if(!e.target.classList.contains('add-btn')) openPreview(p);
+            };
+
+            // HOVER EVENT LOGIC
+            const imgElement = card.querySelector('.product-img');
+            handleHoverEffect(imgElement, p);
+
             grid.appendChild(card);
         });
 
@@ -87,7 +100,49 @@ function renderProducts(list) {
     }
 }
 
-// 3. Fading Slider
+// 3. Hover Effect Logic (Fading Views)
+function handleHoverEffect(imgElement, product) {
+    let hoverTimeout;
+    let cycleInterval;
+    let viewIndex = 0;
+    
+    // Collect available views
+    const views = [
+        product.frontview || product.image,
+        product.topview,
+        product.bottomview,
+        product.backview
+    ].filter(url => url && url.length > 5);
+
+    if (views.length <= 1) return; // No need to animate if only 1 image
+
+    imgElement.addEventListener('mouseenter', () => {
+        // Wait for specified delay before starting animation
+        hoverTimeout = setTimeout(() => {
+            cycleInterval = setInterval(() => {
+                viewIndex = (viewIndex + 1) % views.length;
+                // Fade out
+                imgElement.style.opacity = 0;
+                setTimeout(() => {
+                    imgElement.src = views[viewIndex];
+                    // Fade in
+                    imgElement.style.opacity = 1;
+                }, 200); // Wait for fade out to switch src
+            }, 2000); // Switch image every 2 seconds
+        }, HOVER_DELAY);
+    });
+
+    imgElement.addEventListener('mouseleave', () => {
+        clearTimeout(hoverTimeout);
+        clearInterval(cycleInterval);
+        // Reset to original view
+        imgElement.style.opacity = 1;
+        imgElement.src = views[0];
+        viewIndex = 0;
+    });
+}
+
+// 4. Fading Slider
 function initSlider() {
     const slider = document.getElementById('hero-slider');
     const slides = products.filter(p => p.frontview || p.image).slice(0, 5);
@@ -120,15 +175,39 @@ function initSlider() {
     }, 4000); 
 }
 
-// 4. Preview Modal (Back Icon & Smaller Button)
+// 5. Preview Modal (Fixed to show all views)
 function openPreview(p) {
     const modal = document.getElementById('preview-modal');
     
-    let images = [p.frontview, p.topview, p.bottomview, p.backview, p.image].filter(url => url && url.length > 5);
-    images = [...new Set(images)];
-    if(images.length === 0) images = [FALLBACK_LOGO];
+    // Define all possible views and their labels
+    const viewsData = [
+        { url: p.frontview || p.image, label: 'Front View' },
+        { url: p.topview, label: 'Top View' },
+        { url: p.bottomview, label: 'Bottom View' },
+        { url: p.backview, label: 'Back View' },
+    ];
+    
+    // Filter out missing views and use FALLBACK_LOGO for the main view if needed
+    let availableViews = viewsData.filter(v => v.url && v.url.length > 5);
 
-    let imgsHTML = images.map(url => `<img src="${url}" class="preview-img">`).join('');
+    // Ensure at least one view exists (using fallback logo)
+    if (availableViews.length === 0) {
+        availableViews = [{ url: FALLBACK_LOGO, label: 'Image' }];
+    } else {
+        // Ensure the main image uses the FALLBACK_LOGO if its URL is missing
+        if (!p.frontview && !p.image) {
+             availableViews[0].url = FALLBACK_LOGO;
+        }
+    }
+    
+    // Generate HTML for the gallery
+    let imgsHTML = availableViews.map(v => `
+        <div class="preview-image-container">
+            <img src="${v.url}" class="preview-img" alt="${v.label}">
+            <p style="font-size:0.8rem; color:#777; margin-top:5px;">${v.label}</p>
+        </div>
+    `).join('');
+    
     const globalIndex = products.indexOf(p);
 
     document.querySelector('#preview-modal .modal-content').innerHTML = `
@@ -163,7 +242,7 @@ function closePreviewModal() {
     document.getElementById('preview-modal').style.display = 'none';
 }
 
-// 5. Cart Logic (Sidebar)
+// 6. Cart Logic
 function toggleCart() {
     const modal = document.getElementById('cart-modal');
     modal.classList.toggle('open');
@@ -212,14 +291,14 @@ function updateCartUI() {
     if(cart.length === 0) container.innerHTML = '<p>Your cart is empty.</p>';
 }
 
-// 6. Search
+// 7. Search
 function filterAndSearch() {
     const term = document.getElementById('search-input').value.toLowerCase();
     const filtered = products.filter(p => p.name.toLowerCase().includes(term));
     renderProducts(filtered);
 }
 
-// 7. Checkout
+// 8. Checkout
 function checkoutViaWhatsApp() {
     if(cart.length === 0) return alert("Cart is empty");
     
