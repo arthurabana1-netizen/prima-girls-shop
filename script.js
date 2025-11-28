@@ -3,8 +3,8 @@ const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCp9HDFZI7Ao
 const ADMIN_PHONE = '250786023627'; 
 const FALLBACK_LOGO = 'https://i.postimg.cc/g0K6WDxZ/prima-girls-shop-logo-2.png';
 
-// Time in milliseconds to wait before cycling images on hover
-// Change this to 15000 if you want 15 seconds. Currently set to 2000 (2s) for better UX.
+// Time in milliseconds to wait before cycling images on hover.
+// Currently set to 2000ms (2 seconds). Change to 15000ms if you require 15 seconds.
 const HOVER_DELAY = 2000; 
 // ---------------------
 
@@ -46,7 +46,7 @@ function parseCSV(csv) {
     return data;
 }
 
-// 2. Render Products
+// 2. Render Products with Hover Effect
 function renderProducts(list) {
     const container = document.getElementById('product-container');
     container.innerHTML = '';
@@ -106,7 +106,7 @@ function handleHoverEffect(imgElement, product) {
     let cycleInterval;
     let viewIndex = 0;
     
-    // Collect available views
+    // Collect available views (must have a valid URL)
     const views = [
         product.frontview || product.image,
         product.topview,
@@ -114,7 +114,7 @@ function handleHoverEffect(imgElement, product) {
         product.backview
     ].filter(url => url && url.length > 5);
 
-    if (views.length <= 1) return; // No need to animate if only 1 image
+    if (views.length <= 1) return; // No need to animate
 
     imgElement.addEventListener('mouseenter', () => {
         // Wait for specified delay before starting animation
@@ -165,6 +165,7 @@ function initSlider() {
         slider.appendChild(div);
     });
     
+    // Auto-cycle the slider
     setInterval(() => {
         let items = document.querySelectorAll('.slider-item');
         if(items.length > 0) {
@@ -175,7 +176,7 @@ function initSlider() {
     }, 4000); 
 }
 
-// 5. Preview Modal (Fixed to show all views)
+// 5. Preview Modal (All views displayed)
 function openPreview(p) {
     const modal = document.getElementById('preview-modal');
     
@@ -187,24 +188,19 @@ function openPreview(p) {
         { url: p.backview, label: 'Back View' },
     ];
     
-    // Filter out missing views and use FALLBACK_LOGO for the main view if needed
+    // Filter out missing views
     let availableViews = viewsData.filter(v => v.url && v.url.length > 5);
 
-    // Ensure at least one view exists (using fallback logo)
+    // If no images are available, use the fallback logo
     if (availableViews.length === 0) {
         availableViews = [{ url: FALLBACK_LOGO, label: 'Image' }];
-    } else {
-        // Ensure the main image uses the FALLBACK_LOGO if its URL is missing
-        if (!p.frontview && !p.image) {
-             availableViews[0].url = FALLBACK_LOGO;
-        }
-    }
+    } 
     
-    // Generate HTML for the gallery
+    // Generate HTML for the gallery, showing image and label
     let imgsHTML = availableViews.map(v => `
         <div class="preview-image-container">
             <img src="${v.url}" class="preview-img" alt="${v.label}">
-            <p style="font-size:0.8rem; color:#777; margin-top:5px;">${v.label}</p>
+            <p style="font-size:0.8rem; color:#777; margin-top:5px; margin-bottom: 5px;">${v.label}</p>
         </div>
     `).join('');
     
