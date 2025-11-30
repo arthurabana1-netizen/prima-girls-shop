@@ -3,7 +3,7 @@
 
 :root {
     --primary-color: #FF69B4; /* Deep Pink */
-    --secondary-color: #8A2BE2; /* Blue Violet */
+    --secondary-color: #8A2BE2; /* Blue Violet (Dark Violet) */
     --text-color: #333;
     --bg-color: #f9f9f9;
     --white: #ffffff;
@@ -79,7 +79,7 @@ header {
 
 .welcome-logo { height: 50px; width: auto; }
 
-/* --- FADING HERO SLIDER (Fixed Clickability) --- */
+/* --- FADING HERO SLIDER --- */
 .product-slider {
     width: 100%; height: 200px; position: relative; overflow: hidden;
     border-radius: 10px; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
@@ -88,20 +88,15 @@ header {
 
 .slider-item {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    opacity: 0; 
-    transition: opacity 1s ease-in-out; 
-    /* Critical: Hide non-active slides from mouse events */
+    opacity: 0; transition: opacity 1s ease-in-out; 
     pointer-events: none; 
     z-index: 0;
 }
-
 .slider-item.active { 
     opacity: 1; 
-    /* Critical: Make active slide clickable */
     pointer-events: auto; 
     z-index: 2;
 }
-
 .slider-img { width: 100%; height: 100%; object-fit: cover; }
 .slider-caption {
     position: absolute; bottom: 10px; left: 15px; color: white;
@@ -132,12 +127,11 @@ header {
     box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-direction: column;
 }
 
+/* ADDED TRANSITION FOR HOVER FADE */
 .product-img { 
     width: 100%; height: 180px; object-fit: cover; border-bottom: 1px solid #eee; 
-    /* Add transition for the hover fade effect */
     transition: opacity 0.5s ease-in-out;
 }
-
 .product-info { padding: 12px; display: flex; flex-direction: column; flex-grow: 1; }
 .product-name {
     font-size: 0.95rem; font-weight: 600; margin-bottom: 5px;
@@ -195,19 +189,19 @@ header {
 }
 
 .close-btn {
-    position: absolute; top: 10px; right: 15px;
+    position: absolute; top: 5px; right: 15px;
     font-size: 2rem; cursor: pointer; color: #555; z-index: 10;
 }
 
-/* Preview Header (Reduced Size) */
+/* Preview Header (STICKY & SMALL) */
 .preview-header-text {
     position: sticky; top: 0; background: var(--white); z-index: 10;     
     text-align: center;
-    font-size: 1.1rem; /* Smaller font */
-    font-weight: 600;
+    font-size: 1rem !important; 
+    font-weight: 700;
     color: var(--secondary-color);
     border-bottom: 1px solid #eee;
-    padding: 10px 20px 8px; /* Compact padding */
+    padding: 8px 10px !important; 
     margin-bottom: 0; 
     position: relative; 
 }
@@ -215,49 +209,80 @@ header {
 /* Back Icon */
 .back-icon {
     position: absolute; left: 15px; top: 50%; transform: translateY(-50%);
-    font-size: 1.2rem; color: var(--secondary-color); cursor: pointer;
+    font-size: 1.1rem; color: var(--secondary-color); cursor: pointer;
 }
 .back-icon:hover { color: var(--primary-color); }
 
-/* Inner Details Container (for padding) */
+/* Inner Details Container */
 #preview-details { padding: 0 20px; }
 
-.preview-product-title { font-size: 1.2rem; font-weight: 600; margin-top: 15px; margin-bottom: 5px; }
-.preview-price { color: var(--secondary-color); font-weight: 700; margin-bottom: 10px; }
-
-/* Gallery Layout for all views */
-.preview-gallery { 
-    display: grid; 
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); /* Adjusted to fit more images */
-    gap: 10px; 
-    margin: 15px 0; 
+.preview-product-title { 
+    font-size: 1.1rem !important; font-weight: 600; margin-top: 10px; margin-bottom: 5px; 
+}
+.preview-price { 
+    font-size: 1.2rem !important; 
+    color: var(--secondary-color); font-weight: 700; margin-bottom: 10px; 
 }
 
-.preview-image-container {
+/* --- MODAL SLIDER STYLES --- */
+.modal-slider-container {
+    position: relative;
+    width: 100%;
+    height: 300px; 
+    margin-bottom: 10px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-slide-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Modal Slider Navigation Buttons */
+.modal-prev, .modal-next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.2);
+    color: white;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    border-radius: 50%;
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 5;
+}
+.modal-prev:hover, .modal-next:hover { background: rgba(0,0,0,0.5); }
+.modal-prev { left: 10px; }
+.modal-next { right: 10px; }
+
+/* View Label (e.g., "Front View") */
+.view-label {
     text-align: center;
-    border: 1px solid #eee;
-    border-radius: 5px;
-    padding: 5px;
-}
-.preview-img { 
-    width: 100%; 
-    height: 120px; /* Reduced height for multiple views */
-    object-fit: contain; 
-    border-radius: 3px;
+    color: #777;
+    font-size: 0.9rem;
+    margin-top: -5px;
+    margin-bottom: 15px;
+    font-style: italic;
 }
 
-/* Sticky Add to Cart (Reduced Size) */
+/* Add to Cart (STICKY & SMALL) */
 .preview-add-btn {
     position: sticky; bottom: 0; z-index: 10;     
     width: 100%; background: var(--primary-color); color: white; border: none; 
-    padding: 10px; /* Reduced padding */
-    font-size: 0.95rem; /* Smaller font */
+    padding: 8px !important; 
+    font-size: 0.9rem !important; 
     border-radius: 0 0 10px 10px; 
     cursor: pointer; font-weight: 700; margin-top: 5px;
     border-top: 1px solid var(--primary-color); 
 }
 .preview-add-btn:hover { background: #E65A9F; }
-
 
 /* --- Floating Button --- */
 .float-chat {
@@ -274,4 +299,5 @@ header {
     .product-grid { grid-template-columns: 1fr 1fr; gap: 10px; } 
     .modal-content, #preview-details { padding: 0 10px; }
     .preview-header-text { padding: 8px 10px; }
+    .modal-slider-container { height: 250px; } 
 }

@@ -1,16 +1,19 @@
 // --- CONFIGURATION ---
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCp9HDFZI7AodQIJN4zyTLWbLy2LK9ORzxT9QtJMe8ggTVOYeknYent5E9Gp_BzZpIzsaUB0RWxzr7/pub?output=csv'; 
 const ADMIN_PHONE = '250786023627'; 
-const FALLBACK_LOGO = 'https://i.postimg.cc/g0K6WDxZ/prima-girls-shop-logo-2.png';
+const FALLBACK_LOGO = 'https://i.postimg.cc/TPXS02cm/prima-essentials.png';
 
 // Time in milliseconds to wait before cycling images on hover.
-// Currently set to 2000ms (2 seconds). Change to 15000ms if you require 15 seconds.
 const HOVER_DELAY = 2000; 
 // ---------------------
 
 let products = []; 
 let cart = [];
-let slideIndex = 0;
+let slideIndex = 0; // For Hero Slider
+
+// Variables for Modal Slider
+let currentPreviewImages = [];
+let currentPreviewIndex = 0;
 
 // 1. Initialize
 async function loadProducts() {
@@ -46,7 +49,7 @@ function parseCSV(csv) {
     return data;
 }
 
-// 2. Render Products with Hover Effect
+// 2. Render Products
 function renderProducts(list) {
     const container = document.getElementById('product-container');
     container.innerHTML = '';
@@ -74,7 +77,6 @@ function renderProducts(list) {
             let card = document.createElement('div');
             card.className = 'product-card';
             
-            // Generate HTML
             card.innerHTML = `
                 <img src="${img}" class="product-img" id="img-${globalIndex}" alt="${p.name}">
                 <div class="product-info">
@@ -84,12 +86,11 @@ function renderProducts(list) {
                 </div>
             `;
             
-            // Click Event
             card.onclick = (e) => {
                 if(!e.target.classList.contains('add-btn')) openPreview(p);
             };
 
-            // HOVER EVENT LOGIC
+            // REINSTATE CALL TO HOVER EFFECT
             const imgElement = card.querySelector('.product-img');
             handleHoverEffect(imgElement, p);
 
@@ -100,7 +101,7 @@ function renderProducts(list) {
     }
 }
 
-// 3. Hover Effect Logic (Fading Views)
+// 3. Hover Effect Logic (Fading Views) - REINSTATED
 function handleHoverEffect(imgElement, product) {
     let hoverTimeout;
     let cycleInterval;
@@ -116,33 +117,31 @@ function handleHoverEffect(imgElement, product) {
 
     if (views.length <= 1) return; // No need to animate
 
+    // Mouseenter/Hover logic
     imgElement.addEventListener('mouseenter', () => {
-        // Wait for specified delay before starting animation
         hoverTimeout = setTimeout(() => {
             cycleInterval = setInterval(() => {
                 viewIndex = (viewIndex + 1) % views.length;
-                // Fade out
                 imgElement.style.opacity = 0;
                 setTimeout(() => {
                     imgElement.src = views[viewIndex];
-                    // Fade in
                     imgElement.style.opacity = 1;
-                }, 200); // Wait for fade out to switch src
+                }, 200); // Switch source during fade-out
             }, 2000); // Switch image every 2 seconds
-        }, HOVER_DELAY);
+        }, HOVER_DELAY); // Wait for initial delay
     });
 
+    // Mouseleave/Touch-end logic
     imgElement.addEventListener('mouseleave', () => {
         clearTimeout(hoverTimeout);
         clearInterval(cycleInterval);
-        // Reset to original view
         imgElement.style.opacity = 1;
         imgElement.src = views[0];
         viewIndex = 0;
     });
 }
 
-// 4. Fading Slider
+// 4. Fading Hero Slider (Homepage)
 function initSlider() {
     const slider = document.getElementById('hero-slider');
     const slides = products.filter(p => p.frontview || p.image).slice(0, 5);
@@ -155,9 +154,7 @@ function initSlider() {
     slides.forEach((p, idx) => {
         let div = document.createElement('div');
         div.className = `slider-item ${idx === 0 ? 'active' : ''}`;
-        
         div.onclick = () => openPreview(p);
-
         div.innerHTML = `
             <img src="${p.frontview || p.image}" class="slider-img">
             <div class="slider-caption">${p.name}</div>
@@ -165,7 +162,6 @@ function initSlider() {
         slider.appendChild(div);
     });
     
-    // Auto-cycle the slider
     setInterval(() => {
         let items = document.querySelectorAll('.slider-item');
         if(items.length > 0) {
@@ -176,11 +172,12 @@ function initSlider() {
     }, 4000); 
 }
 
-// 5. Preview Modal (All views displayed)
+// 5. PREVIEW MODAL (With Slider Interaction)
 function openPreview(p) {
     const modal = document.getElementById('preview-modal');
+    const globalIndex = products.indexOf(p);
     
-    // Define all possible views and their labels
+    // Collect views
     const viewsData = [
         { url: p.frontview || p.image, label: 'Front View' },
         { url: p.topview, label: 'Top View' },
@@ -188,23 +185,13 @@ function openPreview(p) {
         { url: p.backview, label: 'Back View' },
     ];
     
-    // Filter out missing views
-    let availableViews = viewsData.filter(v => v.url && v.url.length > 5);
-
-    // If no images are available, use the fallback logo
-    if (availableViews.length === 0) {
-        availableViews = [{ url: FALLBACK_LOGO, label: 'Image' }];
-    } 
+    // Filter valid images
+    currentPreviewImages = viewsData.filter(v => v.url && v.url.length > 5);
+    if(currentPreviewImages.length === 0) {
+        currentPreviewImages = [{ url: FALLBACK_LOGO, label: 'Image' }];
+    }
     
-    // Generate HTML for the gallery, showing image and label
-    let imgsHTML = availableViews.map(v => `
-        <div class="preview-image-container">
-            <img src="${v.url}" class="preview-img" alt="${v.label}">
-            <p style="font-size:0.8rem; color:#777; margin-top:5px; margin-bottom: 5px;">${v.label}</p>
-        </div>
-    `).join('');
-    
-    const globalIndex = products.indexOf(p);
+    currentPreviewIndex = 0;
 
     document.querySelector('#preview-modal .modal-content').innerHTML = `
         <span class="close-btn" onclick="closePreviewModal()">&times;</span>
@@ -221,7 +208,12 @@ function openPreview(p) {
                 Color: ${p.color || 'N/A'} | Size: ${p.size || 'N/A'}
             </div>
             
-            <div class="preview-gallery">${imgsHTML}</div>
+            <div class="modal-slider-container">
+                <button class="modal-prev" onclick="changeModalSlide(-1)">&#10094;</button>
+                <img src="${currentPreviewImages[0].url}" class="modal-slide-img" id="modal-img">
+                <button class="modal-next" onclick="changeModalSlide(1)">&#10095;</button>
+            </div>
+            <div class="view-label" id="modal-view-label">${currentPreviewImages[0].label}</div>
             
             <div style="height: 10px;"></div>
         </div>
@@ -231,7 +223,35 @@ function openPreview(p) {
         </button>
     `;
     
+    // Hide buttons if only 1 image
+    if(currentPreviewImages.length <= 1) {
+        document.querySelector('.modal-prev').style.display = 'none';
+        document.querySelector('.modal-next').style.display = 'none';
+    }
+
     modal.style.display = 'flex';
+}
+
+function changeModalSlide(direction) {
+    if(currentPreviewImages.length <= 1) return;
+    
+    currentPreviewIndex += direction;
+    
+    if (currentPreviewIndex >= currentPreviewImages.length) {
+        currentPreviewIndex = 0;
+    } else if (currentPreviewIndex < 0) {
+        currentPreviewIndex = currentPreviewImages.length - 1;
+    }
+    
+    // Update DOM with fade effect (optional, but good UX)
+    const imgEl = document.getElementById('modal-img');
+    imgEl.style.opacity = 0;
+
+    setTimeout(() => {
+        imgEl.src = currentPreviewImages[currentPreviewIndex].url;
+        document.getElementById('modal-view-label').innerText = currentPreviewImages[currentPreviewIndex].label;
+        imgEl.style.opacity = 1;
+    }, 200); 
 }
 
 function closePreviewModal() {
@@ -287,17 +307,15 @@ function updateCartUI() {
     if(cart.length === 0) container.innerHTML = '<p>Your cart is empty.</p>';
 }
 
-// 7. Search
+// 7. Search & Checkout
 function filterAndSearch() {
     const term = document.getElementById('search-input').value.toLowerCase();
     const filtered = products.filter(p => p.name.toLowerCase().includes(term));
     renderProducts(filtered);
 }
 
-// 8. Checkout
 function checkoutViaWhatsApp() {
     if(cart.length === 0) return alert("Cart is empty");
-    
     let msg = "Hello, I want to order:\n\n";
     let total = 0;
     cart.forEach(p => {
@@ -306,7 +324,6 @@ function checkoutViaWhatsApp() {
         msg += `- ${p.name} (${p.size||''} ${p.color||''}): ${p.price}\n`;
     });
     msg += `\nTotal: ${total} RWF`;
-    
     window.open(`https://wa.me/${ADMIN_PHONE}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
